@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>简易坦克对战游戏</title>
+    <style>
+        /* 游戏画布样式 */
+        #game {
+            width: 600px;
+            height: 400px;
+            border: 2px solid #333;
+            background-color: #eee;
+            position: relative;
+            margin: 20px auto;
+        }
+        /* 玩家坦克样式 */
+        .tank {
+            width: 40px;
+            height: 40px;
+            background-color: #0066ff;
+            position: absolute;
+            border-radius: 5px;
+        }
+        /* 敌方坦克样式 */
+        .enemy-tank {
+            width: 40px;
+            height: 40px;
+            background-color: #ff3333;
+            position: absolute;
+            border-radius: 5px;
+        }
+        /* 子弹样式 */
+        .bullet {
+            width: 5px;
+            height: 5px;
+            background-color: #000;
+            position: absolute;
+            border-radius: 50%;
+        }
+        /* 操作说明 */
+        .info {
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        操作说明：↑↓←→ 移动坦克 | 空格键 发射子弹 | 击毁红色敌方坦克得分
+    </div>
+    <div id="game"></div>
+
+    <script>
+        // 获取游戏画布
+        const game = document.getElementById('game');
+        const gameWidth = 600;
+        const gameHeight = 400;
+        
+        // 玩家坦克初始化
+        let tank = {
+            x: 280,
+            y: 350,
+            speed: 5,
+            direction: 'up'
+        };
+        const tankElement = document.createElement('div');
+        tankElement.className = 'tank';
+        tankElement.style.left = `${tank.x}px`;
+        tankElement.style.top = `${tank.y}px`;
+        game.appendChild(tankElement);
+
+        // 创建敌方坦克
+        function createEnemy() {
+            const enemy = document.createElement('div');
+            enemy.className = 'enemy-tank';
+            // 随机位置生成敌方坦克
+            const x = Math.random() * (gameWidth - 40);
+            enemy.style.left = `${x}px`;
+            enemy.style.top = '20px';
+            game.appendChild(enemy);
+            
+            // 敌方坦克向下移动
+            setInterval(() => {
+                let top = parseInt(enemy.style.top);
+                if (top < gameHeight - 40) {
+                    enemy.style.top = `${top + 1}px`;
+                } else {
+                    enemy.remove(); // 移出画布后删除
+                }
+            }, 30);
+        }
+
+        // 每3秒生成一个敌方坦克
+        setInterval(createEnemy, 3000);
+
+        // 键盘控制坦克移动
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    tank.direction = 'up';
+                    if (tank.y > 0) tank.y -= tank.speed;
+                    break;
+                case 'ArrowDown':
+                    tank.direction = 'down';
+                    if (tank.y < gameHeight - 40) tank.y += tank.speed;
+                    break;
+                case 'ArrowLeft':
+                    tank.direction = 'left';
+                    if (tank.x > 0) tank.x -= tank.speed;
+                    break;
+                case 'ArrowRight':
+                    tank.direction = 'right';
+                    if (tank.x < gameWidth - 40) tank.x += tank.speed;
+                    break;
+                case ' ': // 空格键发射子弹
+                    shoot();
+                    break;
+            }
+            // 更新坦克位置
+            tankElement.style.left = `${tank.x}px`;
+            tankElement.style.top = `${tank.y}px`;
+        });
+
+        // 发射子弹
+        function shoot() {
+            const bullet = document.createElement('div');
+            bullet.className = 'bullet';
+            // 子弹初始位置（坦克中心）
+            bullet.style.left = `${tank.x + 17}px`;
+            bullet.style.top = `${tank.y + 17}px`;
+            game.appendChild(bullet);
+
+            // 子弹移动
+            const bulletSpeed = setInterval(() => {
+                let top = parseInt(bullet.style.top);
+                let left = parseInt(bullet.style.left);
+                
+                // 根据坦克方向移动子弹
+                switch(tank.direction) {
+                    case 'up':
+                        top -= 10;
+                        break;
+                    case 'down':
+                        top += 10;
+                        break;
+                    case 'left':
+                        left -= 10;
+                        break;
+                    case 'right':
+                        left += 10;
+                        break;
+                }
+                
+                bullet.style.top = `${top}px`;
+                bullet.style.left = `${left}px`;
+
+                // 子弹碰撞检测（击中敌方坦克）
+                const enemies = document.querySelectorAll('.enemy-tank');
+                enemies.forEach(enemy => {
+                    const enemyX = parseInt(enemy.style.left);
+                    const enemyY = parseInt(enemy.style.top);
+                    if (
+                        left > enemyX && left < enemyX + 40 &&
+                        top > enemyY && top < enemyY + 40
+                    ) {
+                        enemy.remove(); // 击毁敌方坦克
+                        bullet.remove(); // 子弹消失
+                        clearInterval(bulletSpeed);
+                    }
+                });
+
+                // 子弹移出画布后删除
+                if (top < 0 || top > gameHeight || left < 0 || left > gameWidth) {
+                    bullet.remove();
+                    clearInterval(bulletSpeed);
+                }
+            }, 20);
+        }
+
+        // 初始化生成第一个敌方坦克
+        createEnemy();
+    </script>
+</body>
+</html>
