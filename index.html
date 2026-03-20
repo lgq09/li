@@ -108,6 +108,24 @@
             padding: 8px 15px;
             border-radius: 6px;
         }
+        .start-btn {
+            display: block;
+            margin: 20px auto 0;
+            padding: 12px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(79, 172, 254, 0.4);
+            transition: all 0.3s ease;
+        }
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.6);
+        }
         .mobile-controls {
             display: none;
             margin-top: 25px;
@@ -167,6 +185,10 @@
             .controls-guide {
                 font-size: 14px;
             }
+            .start-btn {
+                font-size: 18px;
+                padding: 10px 25px;
+            }
         }
     </style>
 </head>
@@ -182,6 +204,9 @@
         
         <!-- 游戏画布 -->
         <canvas id="gameCanvas" width="600" height="400"></canvas>
+        
+        <!-- 开始游戏按钮 -->
+        <button class="start-btn" id="startGameBtn">开始游戏 🎮</button>
         
         <!-- 操作指南 -->
         <div class="controls-guide">
@@ -238,6 +263,7 @@
         const ctx = canvas.getContext('2d');
         const p1ScoreElement = document.querySelector('.player1-score');
         const p2ScoreElement = document.querySelector('.player2-score');
+        const startGameBtn = document.getElementById('startGameBtn');
         
         // 游戏核心配置
         const gridSize = 20;
@@ -264,14 +290,56 @@
         let food = {x: 0, y: 0};
         let props = []; // 道具数组
         const propTypes = ['speed', 'slow', 'small', 'freeze']; // 加速、减速、变小、定身
-        let gameLoop;
+        let gameLoop = null;
+        let isGameRunning = false;
+        
+        // 初始化画布（显示初始界面）
+        function initCanvas() {
+            // 清空画布
+            ctx.fillStyle = '#f9f9f9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制初始提示
+            ctx.fillStyle = '#333';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('点击「开始游戏」按钮开始对战', canvas.width/2, canvas.height/2 - 20);
+            ctx.font = '18px Arial';
+            ctx.fillText('玩家1：方向键 | 玩家2：WASD', canvas.width/2, canvas.height/2 + 20);
+            
+            // 绘制网格
+            ctx.strokeStyle = '#eeeeee';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= tileWidth; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * gridSize, 0);
+                ctx.lineTo(i * gridSize, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= tileHeight; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * gridSize);
+                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.stroke();
+            }
+        }
         
         // 初始化游戏
         function initGame() {
+            // 重置游戏状态
+            resetGame();
+            
+            // 生成食物和道具
             generateFood();
-            generateProps(); // 生成道具
+            generateProps();
             updateScores();
+            
+            // 开始游戏循环
+            isGameRunning = true;
             gameLoop = setInterval(update, Math.min(speed1, speed2));
+            
+            // 隐藏开始按钮
+            startGameBtn.style.display = 'none';
         }
         
         // 生成食物
@@ -359,6 +427,8 @@
         
         // 键盘控制
         document.addEventListener('keydown', (e) => {
+            if (!isGameRunning) return; // 游戏未开始时不响应按键
+            
             // 玩家1：方向键
             switch(e.key) {
                 case 'ArrowUp': if (dy1 !== 1 && !freeze1) { dx1 = 0; dy1 = -1; } break;
@@ -376,16 +446,32 @@
         
         // 手机虚拟按键控制
         // 玩家1
-        document.getElementById('p1Up').addEventListener('click', () => { if (dy1 !== 1 && !freeze1) { dx1 = 0; dy1 = -1; } });
-        document.getElementById('p1Down').addEventListener('click', () => { if (dy1 !== -1 && !freeze1) { dx1 = 0; dy1 = 1; } });
-        document.getElementById('p1Left').addEventListener('click', () => { if (dx1 !== 1 && !freeze1) { dx1 = -1; dy1 = 0; } });
-        document.getElementById('p1Right').addEventListener('click', () => { if (dx1 !== -1 && !freeze1) { dx1 = 1; dy1 = 0; } });
+        document.getElementById('p1Up').addEventListener('click', () => { 
+            if (isGameRunning && dy1 !== 1 && !freeze1) { dx1 = 0; dy1 = -1; } 
+        });
+        document.getElementById('p1Down').addEventListener('click', () => { 
+            if (isGameRunning && dy1 !== -1 && !freeze1) { dx1 = 0; dy1 = 1; } 
+        });
+        document.getElementById('p1Left').addEventListener('click', () => { 
+            if (isGameRunning && dx1 !== 1 && !freeze1) { dx1 = -1; dy1 = 0; } 
+        });
+        document.getElementById('p1Right').addEventListener('click', () => { 
+            if (isGameRunning && dx1 !== -1 && !freeze1) { dx1 = 1; dy1 = 0; } 
+        });
         
         // 玩家2
-        document.getElementById('p2Up').addEventListener('click', () => { if (dy2 !== 1 && !freeze2) { dx2 = 0; dy2 = -1; } });
-        document.getElementById('p2Down').addEventListener('click', () => { if (dy2 !== -1 && !freeze2) { dx2 = 0; dy2 = 1; } });
-        document.getElementById('p2Left').addEventListener('click', () => { if (dx2 !== 1 && !freeze2) { dx2 = -1; dy2 = 0; } });
-        document.getElementById('p2Right').addEventListener('click', () => { if (dx2 !== -1 && !freeze2) { dx2 = 1; dy2 = 0; } });
+        document.getElementById('p2Up').addEventListener('click', () => { 
+            if (isGameRunning && dy2 !== 1 && !freeze2) { dx2 = 0; dy2 = -1; } 
+        });
+        document.getElementById('p2Down').addEventListener('click', () => { 
+            if (isGameRunning && dy2 !== -1 && !freeze2) { dx2 = 0; dy2 = 1; } 
+        });
+        document.getElementById('p2Left').addEventListener('click', () => { 
+            if (isGameRunning && dx2 !== 1 && !freeze2) { dx2 = -1; dy2 = 0; } 
+        });
+        document.getElementById('p2Right').addEventListener('click', () => { 
+            if (isGameRunning && dx2 !== -1 && !freeze2) { dx2 = 1; dy2 = 0; } 
+        });
         
         // 更新分数
         function updateScores() {
@@ -503,13 +589,19 @@
             draw();
             
             // 更新游戏速度
-            clearInterval(gameLoop);
-            gameLoop = setInterval(update, Math.min(speed1, speed2));
+            if (isGameRunning) {
+                clearInterval(gameLoop);
+                gameLoop = setInterval(update, Math.min(speed1, speed2));
+            }
         }
         
         // 结束游戏
         function endGame(result) {
+            // 停止游戏循环
             clearInterval(gameLoop);
+            isGameRunning = false;
+            
+            // 显示胜负提示
             let gameOverText = '';
             if (result === 0) {
                 // 头碰头双方都输
@@ -522,7 +614,13 @@
                 gameOverText = `🏆 玩家2（红蛇）胜利！\n❌ 玩家1（蓝蛇）输掉游戏！\n玩家1得分: ${score1}\n玩家2得分: ${score2}`;
             }
             alert(gameOverText);
-            resetGame();
+            
+            // 显示开始游戏按钮，等待用户手动开始
+            startGameBtn.style.display = 'block';
+            startGameBtn.textContent = '重新开始 🎮';
+            
+            // 重置画布显示初始界面
+            initCanvas();
         }
         
         // 重置游戏
@@ -544,17 +642,17 @@
             freeze2 = false;
             
             // 重置食物和道具
-            generateFood();
-            generateProps();
-            updateScores();
+            food = {x: 0, y: 0};
+            props = [];
             
-            // 重启游戏
-            clearInterval(gameLoop);
-            gameLoop = setInterval(update, 120);
+            // 重置分数显示
+            updateScores();
         }
         
         // 绘制游戏界面
         function draw() {
+            if (!isGameRunning) return;
+            
             // 清空画布
             ctx.fillStyle = '#f9f9f9';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -698,8 +796,11 @@
             }
         }
         
-        // 启动游戏
-        initGame();
+        // 绑定开始游戏按钮事件
+        startGameBtn.addEventListener('click', initGame);
+        
+        // 初始化画布显示初始界面
+        initCanvas();
     </script>
 </body>
 </html>
